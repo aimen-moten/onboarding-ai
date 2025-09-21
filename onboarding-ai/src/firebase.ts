@@ -1,0 +1,30 @@
+import { initializeApp } from 'firebase/app';
+import { getAuth, GoogleAuthProvider } from 'firebase/auth';
+
+// Firebase configuration
+// Note: Replace these with your actual Firebase config values or use environment variables
+const firebaseConfig = {
+  apiKey: "AIzaSyDp9mYhX1rDwMbt4IX9Xllfd1n8qmxZrO4",
+  authDomain: "onboardingai-47ab3.firebaseapp.com",
+  projectId: "onboardingai-47ab3",
+  storageBucket: "onboardingai-47ab3.appspot.com",
+  messagingSenderId: "808599523111",
+  appId: "1:808599523111:web:8fba86da6bf8326fcbe302"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+
+// Initialize Firebase Authentication and get a reference to the service
+export const auth = getAuth(app);
+
+// Initialize Google Auth Provider
+export const googleProvider = new GoogleAuthProvider();
+googleProvider.addScope('profile');
+googleProvider.addScope('email');
+// Set custom parameters for popup authentication
+googleProvider.setCustomParameters({
+  prompt: 'select_account'
+});
+
+export default app;
