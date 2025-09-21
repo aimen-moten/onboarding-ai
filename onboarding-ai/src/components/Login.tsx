@@ -79,101 +79,147 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div style={{
+    <div className="login-container" style={{
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
       minHeight: '100vh',
-      backgroundColor: '#f5f5f5',
-      fontFamily: 'Arial, sans-serif'
+      backgroundColor: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+      padding: '1rem'
     }}>
-      <div style={{
+      <div className="login-card" style={{
         backgroundColor: 'white',
-        padding: '2rem',
-        borderRadius: '8px',
-        boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
+        padding: '3rem 2.5rem',
+        borderRadius: '16px',
+        boxShadow: '0 20px 40px rgba(0,0,0,0.1)',
         textAlign: 'center',
-        maxWidth: '400px',
-        width: '100%'
+        maxWidth: '450px',
+        width: '100%',
+        position: 'relative',
+        overflow: 'hidden'
       }}>
-        <h1 style={{
-          color: '#333',
-          marginBottom: '1rem',
-          fontSize: '2rem'
+        {/* Decorative element */}
+        <div style={{
+          position: 'absolute',
+          top: '-50px',
+          right: '-50px',
+          width: '100px',
+          height: '100px',
+          background: 'linear-gradient(45deg, #667eea, #764ba2)',
+          borderRadius: '50%',
+          opacity: 0.1
+        }} />
+        
+        <div style={{
+          position: 'absolute',
+          bottom: '-30px',
+          left: '-30px',
+          width: '60px',
+          height: '60px',
+          background: 'linear-gradient(45deg, #764ba2, #667eea)',
+          borderRadius: '50%',
+          opacity: 0.1
+        }} />
+
+        <h1 className="login-title" style={{
+          color: '#2d3748',
+          marginBottom: '0.5rem',
+          fontSize: '2.5rem',
+          fontWeight: '700',
+          letterSpacing: '-0.025em',
+          background: 'linear-gradient(135deg, #667eea, #764ba2)',
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+          backgroundClip: 'text'
         }}>
           Onboarding AI
         </h1>
         
-        <p style={{
-          color: '#666',
-          marginBottom: '2rem',
-          fontSize: '1rem'
+        <p className="login-subtitle" style={{
+          color: '#718096',
+          marginBottom: '2.5rem',
+          fontSize: '1.1rem',
+          fontWeight: '400',
+          lineHeight: '1.5'
         }}>
-          Sign in to access your dashboard
+          Transform your documents into interactive learning experiences
         </p>
 
         {error && (
           <div style={{
-            backgroundColor: '#fee',
-            color: '#c33',
-            padding: '0.75rem',
-            borderRadius: '4px',
-            marginBottom: '1rem',
-            fontSize: '0.9rem'
+            backgroundColor: '#fed7d7',
+            color: '#c53030',
+            padding: '1rem',
+            borderRadius: '8px',
+            marginBottom: '1.5rem',
+            fontSize: '0.9rem',
+            border: '1px solid #feb2b2',
+            fontWeight: '500'
           }}>
             {error}
           </div>
         )}
 
         <div style={{
-          marginTop: '1rem',
-          padding: '0.75rem',
-          backgroundColor: '#f8f9fa',
-          borderRadius: '4px',
-          fontSize: '0.8rem',
-          color: '#666',
-          textAlign: 'center'
+          marginBottom: '2rem',
+          padding: '1rem',
+          backgroundColor: '#f7fafc',
+          borderRadius: '8px',
+          fontSize: '0.9rem',
+          color: '#4a5568',
+          border: '1px solid #e2e8f0'
         }}>
-          <em>Choose your preferred sign-in method below</em>
+          <em>Choose your preferred sign-in method</em>
         </div>
 
         <button
+          className="login-button"
           onClick={handleGoogleSignIn}
           disabled={loading}
           style={{
             backgroundColor: '#4285f4',
             color: 'white',
             border: 'none',
-            padding: '0.75rem 1.5rem',
-            borderRadius: '4px',
+            padding: '1rem 1.5rem',
+            borderRadius: '12px',
             fontSize: '1rem',
+            fontWeight: '600',
             cursor: loading ? 'not-allowed' : 'pointer',
             opacity: loading ? 0.7 : 1,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: '0.5rem',
+            gap: '0.75rem',
             width: '100%',
-            transition: 'background-color 0.2s',
-            marginBottom: '0.5rem'
+            transition: 'all 0.2s ease',
+            marginBottom: '1rem',
+            boxShadow: '0 4px 12px rgba(66, 133, 244, 0.3)',
+            transform: loading ? 'none' : 'translateY(0)',
+            position: 'relative',
+            overflow: 'hidden'
           }}
           onMouseOver={(e) => {
             if (!loading) {
               e.currentTarget.style.backgroundColor = '#3367d6';
+              e.currentTarget.style.transform = 'translateY(-2px)';
+              e.currentTarget.style.boxShadow = '0 6px 16px rgba(66, 133, 244, 0.4)';
             }
           }}
           onMouseOut={(e) => {
             if (!loading) {
               e.currentTarget.style.backgroundColor = '#4285f4';
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 4px 12px rgba(66, 133, 244, 0.3)';
             }
           }}
         >
           {loading ? (
             <>
               <div style={{
-                width: '16px',
-                height: '16px',
+                width: '20px',
+                height: '20px',
                 border: '2px solid transparent',
                 borderTop: '2px solid white',
                 borderRadius: '50%',
@@ -183,7 +229,7 @@ const Login: React.FC = () => {
             </>
           ) : (
             <>
-              <svg width="18" height="18" viewBox="0 0 24 24">
+              <svg width="20" height="20" viewBox="0 0 24 24">
                 <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
                 <path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
                 <path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
@@ -195,6 +241,7 @@ const Login: React.FC = () => {
         </button>
 
         <button
+          className="login-button"
           onClick={async () => {
             try {
               setLoading(true);
@@ -210,30 +257,39 @@ const Login: React.FC = () => {
             backgroundColor: '#34a853',
             color: 'white',
             border: 'none',
-            padding: '0.75rem 1.5rem',
-            borderRadius: '4px',
+            padding: '1rem 1.5rem',
+            borderRadius: '12px',
             fontSize: '1rem',
+            fontWeight: '600',
             cursor: loading ? 'not-allowed' : 'pointer',
             opacity: loading ? 0.7 : 1,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: '0.5rem',
+            gap: '0.75rem',
             width: '100%',
-            transition: 'background-color 0.2s'
+            transition: 'all 0.2s ease',
+            boxShadow: '0 4px 12px rgba(52, 168, 83, 0.3)',
+            transform: loading ? 'none' : 'translateY(0)',
+            position: 'relative',
+            overflow: 'hidden'
           }}
           onMouseOver={(e) => {
             if (!loading) {
               e.currentTarget.style.backgroundColor = '#2d8f47';
+              e.currentTarget.style.transform = 'translateY(-2px)';
+              e.currentTarget.style.boxShadow = '0 6px 16px rgba(52, 168, 83, 0.4)';
             }
           }}
           onMouseOut={(e) => {
             if (!loading) {
               e.currentTarget.style.backgroundColor = '#34a853';
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 4px 12px rgba(52, 168, 83, 0.3)';
             }
           }}
         >
-          <svg width="18" height="18" viewBox="0 0 24 24">
+          <svg width="20" height="20" viewBox="0 0 24 24">
             <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
             <path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
             <path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
@@ -248,6 +304,46 @@ const Login: React.FC = () => {
           @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
+          }
+          
+          @media (max-width: 768px) {
+            .login-container {
+              padding: 1rem !important;
+            }
+            
+            .login-card {
+              padding: 2rem 1.5rem !important;
+              margin: 0.5rem !important;
+              max-width: calc(100vw - 1rem) !important;
+            }
+            
+            .login-title {
+              font-size: 2rem !important;
+            }
+            
+            .login-subtitle {
+              font-size: 1rem !important;
+            }
+            
+            .login-button {
+              padding: 0.875rem 1.25rem !important;
+              font-size: 0.95rem !important;
+            }
+          }
+          
+          @media (max-width: 480px) {
+            .login-title {
+              font-size: 1.75rem !important;
+            }
+            
+            .login-subtitle {
+              font-size: 0.95rem !important;
+            }
+            
+            .login-button {
+              padding: 0.75rem 1rem !important;
+              font-size: 0.9rem !important;
+            }
           }
         `}
       </style>

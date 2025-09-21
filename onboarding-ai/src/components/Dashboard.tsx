@@ -54,22 +54,28 @@ const Dashboard: React.FC = () => {
   return (
     <div style={{
       minHeight: '100vh',
-      backgroundColor: '#f5f5f5',
-      fontFamily: 'Arial, sans-serif'
+      backgroundColor: '#f8fafc',
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
     }}>
       {/* Header */}
       <header style={{
         backgroundColor: 'white',
-        padding: '1rem 2rem',
-        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+        padding: '1.5rem 2rem',
+        boxShadow: '0 4px 6px rgba(0,0,0,0.05)',
         display: 'flex',
         justifyContent: 'space-between',
-        alignItems: 'center'
+        alignItems: 'center',
+        borderBottom: '1px solid #e2e8f0'
       }}>
         <h1 style={{
-          color: '#333',
+          color: '#2d3748',
           margin: 0,
-          fontSize: '1.5rem'
+          fontSize: '1.75rem',
+          fontWeight: '700',
+          background: 'linear-gradient(135deg, #667eea, #764ba2)',
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+          backgroundClip: 'text'
         }}>
           Onboarding AI Dashboard
         </h1>
@@ -80,8 +86,9 @@ const Dashboard: React.FC = () => {
           gap: '1rem'
         }}>
           <span style={{
-            color: '#666',
-            fontSize: '0.9rem'
+            color: '#718096',
+            fontSize: '0.95rem',
+            fontWeight: '500'
           }}>
             Welcome, {user.displayName || user.email}
           </span>
@@ -89,13 +96,24 @@ const Dashboard: React.FC = () => {
           <button
             onClick={handleSignOut}
             style={{
-              backgroundColor: '#dc3545',
+              backgroundColor: '#e53e3e',
               color: 'white',
               border: 'none',
-              padding: '0.5rem 1rem',
-              borderRadius: '4px',
+              padding: '0.75rem 1.25rem',
+              borderRadius: '8px',
               cursor: 'pointer',
-              fontSize: '0.9rem'
+              fontSize: '0.9rem',
+              fontWeight: '600',
+              transition: 'all 0.2s ease',
+              boxShadow: '0 2px 4px rgba(229, 62, 62, 0.2)'
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.backgroundColor = '#c53030';
+              e.currentTarget.style.transform = 'translateY(-1px)';
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.backgroundColor = '#e53e3e';
+              e.currentTarget.style.transform = 'translateY(0)';
             }}
           >
             Sign Out
@@ -111,23 +129,26 @@ const Dashboard: React.FC = () => {
       }}>
         <div style={{
           backgroundColor: 'white',
-          padding: '2rem',
-          borderRadius: '8px',
-          boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
-          marginBottom: '2rem'
+          padding: '3rem',
+          borderRadius: '16px',
+          boxShadow: '0 10px 25px rgba(0,0,0,0.08)',
+          marginBottom: '2rem',
+          border: '1px solid #e2e8f0'
         }}>
           <h2 style={{
-            color: '#333',
+            color: '#2d3748',
             marginBottom: '1rem',
-            fontSize: '1.3rem'
+            fontSize: '1.75rem',
+            fontWeight: '700'
           }}>
             Welcome to Onboarding AI
           </h2>
           
           <p style={{
-            color: '#666',
+            color: '#718096',
             lineHeight: '1.6',
-            marginBottom: '1.5rem'
+            marginBottom: '2rem',
+            fontSize: '1.1rem'
           }}>
             Transform your static company documents into interactive training experiences. 
             Import content from Notion or Google Drive and let AI generate quizzes and flashcards.
