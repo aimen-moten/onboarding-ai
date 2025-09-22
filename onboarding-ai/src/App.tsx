@@ -29,9 +29,9 @@ function App() {
           path="/" 
           element={user ? <Navigate to="/dashboard" replace /> : <Login />} 
         />
-        <Route 
-          path="/dashboard" 
-          element={user ? <Dashboard /> : <Navigate to="/" replace />} 
+        <Route
+          path="/dashboard"
+          element={user ? <Dashboard /> : <Navigate to="/" replace />}
         />
         {/* Catch-all route for Firebase auth handler */}
         <Route 
