@@ -4,7 +4,6 @@ import dotenv from 'dotenv';
 
 // Load environment variables as early as possible
 dotenv.config();
-console.log('Server.ts - NOTION_TOKEN after dotenv:', process.env.NOTION_TOKEN ? 'Loaded' : 'Not loaded');
 
 import { initializeApp, cert } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';

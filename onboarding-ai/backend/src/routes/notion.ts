@@ -8,7 +8,6 @@ const router = express.Router();
 const NOTION_TOKEN = process.env.NOTION_TOKEN;
 
 console.log("✅ Notion routes file loaded");
-console.log('Notion.ts - NOTION_TOKEN at start of file:', process.env.NOTION_TOKEN ? 'Loaded' : 'Not loaded');
 // Middleware to check for Notion token
 router.use((req, res, next) => {
   if (!NOTION_TOKEN) {
