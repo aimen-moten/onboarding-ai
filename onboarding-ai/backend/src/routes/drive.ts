@@ -4,8 +4,46 @@ import { db } from '../server';
 
 const router = express.Router();
 
-// POST /api/import/drive
-router.post('/drive', async (req, res) => {
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
+const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
+const GOOGLE_REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI;
+const FRONTEND_URL = process.env.FRONTEND_URL;
+
+// Ensure environment variables are loaded
+if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET || !GOOGLE_REDIRECT_URI || !FRONTEND_URL) {
+  console.error('Missing Google API environment variables. Please check your .env file in the root directory.');
+  // You might want to handle this more gracefully in a production app
+}
+
+// GET /api/drive/oauth2callback - Handles Google OAuth2 redirect
+router.get('/oauth2callback', async (req, res) => {
+  const code = req.query.code as string;
+
+  if (!code) {
+    return res.status(400).json({ error: 'Authorization code not provided.' });
+  }
+
+  try {
+    const oauth2Client = new google.auth.OAuth2(
+      GOOGLE_CLIENT_ID,
+      GOOGLE_CLIENT_SECRET,
+      GOOGLE_REDIRECT_URI
+    );
+
+    const { tokens } = await oauth2Client.getToken(code);
+    oauth2Client.setCredentials(tokens);
+
+    // Redirect back to frontend with access token
+    res.redirect(`${FRONTEND_URL}/dashboard?driveAccessToken=${tokens.access_token}`);
+
+  } catch (error: any) {
+    console.error('Error exchanging code for tokens:', error);
+    res.status(500).json({ error: 'Failed to authenticate with Google Drive.', details: error.message });
+  }
+});
+
+// POST /api/drive - Import files from Google Drive
+router.post('/', async (req, res) => { // Changed route from /drive to /
   try {
     const { accessToken, folderId, userId } = req.body;
 

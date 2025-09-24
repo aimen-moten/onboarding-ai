@@ -9,16 +9,22 @@
     "dev": "nodemon src/server.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": ["notion", "google-drive", "content-import", "api"],
+  "keywords": [
+    "notion",
+    "google-drive",
+    "content-import",
+    "api"
+  ],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@google-cloud/local-auth": "^2.1.0",
     "@notionhq/client": "^5.1.0",
     "cors": "^2.8.5",
     "dotenv": "^17.2.2",
     "express": "^5.1.0",
     "firebase-admin": "^13.5.0",
-    "googleapis": "^160.0.0"
+    "googleapis": "^105.0.0"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",

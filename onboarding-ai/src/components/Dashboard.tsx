@@ -4,6 +4,11 @@ import { auth } from '../firebase';
 import { signOut } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
 
+// Environment variables for Google OAuth
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+const GOOGLE_REDIRECT_URI = import.meta.env.VITE_GOOGLE_REDIRECT_URI;
+const GOOGLE_SCOPES = 'https://www.googleapis.com/auth/drive.metadata.readonly https://www.googleapis.com/auth/drive.readonly';
+
 const Dashboard: React.FC = () => {
   const [user, loading, error] = useAuthState(auth);
   const navigate = useNavigate();
@@ -41,8 +46,29 @@ const Dashboard: React.FC = () => {
     if (user) {
       checkNotionConnection();
     }
+
+    // Handle Google Drive OAuth callback
+    const urlParams = new URLSearchParams(window.location.search);
+    const driveAccessTokenParam = urlParams.get('driveAccessToken');
+
+    if (driveAccessTokenParam) {
+      setDriveAccessToken(driveAccessTokenParam);
+      setShowDriveModal(true);
+      // Clean up the URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
     
   }, [user]); // The effect depends on the 'user' object to re-run on authentication state change
+
+  const initiateGoogleDriveOAuth = () => {
+    if (!GOOGLE_CLIENT_ID || !GOOGLE_REDIRECT_URI) {
+      setImportError('Google API credentials are not configured. Please check environment variables.');
+      return;
+    }
+    // Redirect to backend for OAuth flow
+    const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${GOOGLE_CLIENT_ID}&redirect_uri=${GOOGLE_REDIRECT_URI}&scope=${GOOGLE_SCOPES}&response_type=code&access_type=offline&prompt=consent`;
+    window.location.assign(authUrl);
+  };
 
   const handleNotionImport = async () => {
     setImportStatus('Importing from Notion...');
@@ -78,7 +104,7 @@ const Dashboard: React.FC = () => {
     setImportError('');
     try {
       // The URL for the drive import is likely also incorrect
-      const response = await fetch('http://localhost:3001/api/drive/drive', {
+      const response = await fetch('http://localhost:3001/api/drive', { // Changed to /api/drive
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -307,7 +333,7 @@ const Dashboard: React.FC = () => {
                   Import from Notion
                 </button>
                 <button
-                  onClick={() => setShowDriveModal(true)}
+                  onClick={initiateGoogleDriveOAuth}
                   style={{
                     backgroundColor: '#4299e1',
                     color: 'white',
@@ -526,74 +552,72 @@ const Dashboard: React.FC = () => {
             maxWidth: '500px'
           }}>
             <h3 style={{ marginBottom: '1.5rem', color: '#2d3748' }}>Import from Google Drive</h3>
-            <div style={{ marginBottom: '1rem' }}>
-              <label htmlFor="driveAccessToken" style={{ display: 'block', marginBottom: '0.5rem', color: '#4a5568' }}>Google Drive Access Token:</label>
-              <input
-                type="text"
-                id="driveAccessToken"
-                value={driveAccessToken}
-                onChange={(e) => setDriveAccessToken(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '0.75rem',
-                  border: '1px solid #e2e8f0',
-                  borderRadius: '4px',
-                  fontSize: '1rem'
-                }}
-                placeholder="Enter your Google Drive Access Token"
-              />
-            </div>
-            <div style={{ marginBottom: '1.5rem' }}>
-              <label htmlFor="driveFolderId" style={{ display: 'block', marginBottom: '0.5rem', color: '#4a5568' }}>Google Drive Folder ID (Optional):</label>
-              <input
-                type="text"
-                id="driveFolderId"
-                value={driveFolderId}
-                onChange={(e) => setDriveFolderId(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '0.75rem',
-                  border: '1px solid #e2e8f0',
-                  borderRadius: '4px',
-                  fontSize: '1rem'
-                }}
-                placeholder="Enter Google Drive Folder ID"
-              />
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
-              <button
-                onClick={() => setShowDriveModal(false)}
-                style={{
-                  backgroundColor: '#e2e8f0',
-                  color: '#2d3748',
-                  border: 'none',
-                  padding: '0.75rem 1.25rem',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  fontSize: '0.9rem',
-                  fontWeight: '600',
-                  transition: 'all 0.2s ease'
-                }}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleDriveImport}
-                style={{
-                  backgroundColor: '#4299e1',
-                  color: 'white',
-                  border: 'none',
-                  padding: '0.75rem 1.25rem',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  fontSize: '0.9rem',
-                  fontWeight: '600',
-                  transition: 'all 0.2s ease'
-                }}
-              >
-                Import
-              </button>
-            </div>
+            {driveAccessToken ? (
+              <>
+                <p style={{ color: '#4a5568', marginBottom: '1.5rem' }}>
+                  You are authenticated with Google Drive. You can now import files.
+                </p>
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <label htmlFor="driveFolderId" style={{ display: 'block', marginBottom: '0.5rem', color: '#4a5568' }}>Google Drive Folder ID (Optional):</label>
+                  <input
+                    type="text"
+                    id="driveFolderId"
+                    value={driveFolderId}
+                    onChange={(e) => setDriveFolderId(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '4px',
+                      fontSize: '1rem'
+                    }}
+                    placeholder="Enter Google Drive Folder ID"
+                  />
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+                  <button
+                    onClick={() => {
+                      setShowDriveModal(false);
+                      setDriveAccessToken(''); // Clear token on cancel
+                      setDriveFolderId('');
+                    }}
+                    style={{
+                      backgroundColor: '#e2e8f0',
+                      color: '#2d3748',
+                      border: 'none',
+                      padding: '0.75rem 1.25rem',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      fontSize: '0.9rem',
+                      fontWeight: '600',
+                      transition: 'all 0.2s ease'
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleDriveImport}
+                    style={{
+                      backgroundColor: '#4299e1',
+                      color: 'white',
+                      border: 'none',
+                      padding: '0.75rem 1.25rem',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      fontSize: '0.9rem',
+                      fontWeight: '600',
+                      transition: 'all 0.2s ease'
+                    }}
+                  >
+                    Start Import
+                  </button>
+                </div>
+              </>
+            ) : (
+              <p style={{ color: '#4a5568', marginBottom: '1.5rem' }}>
+                Please authenticate with Google Drive to import content.
+              </p>
+            )}
           </div>
         </div>
       )}
