@@ -78,7 +78,7 @@ router.post('/import', async (req, res) => {
           importedContent.push(contentItem);
 
           if (db) {
-            await db.collection('imported_content').doc(page.id).set({
+            await db.collection('notion_imports').doc(page.id).set({
               ...contentItem,
               importedAt: new Date(),
               status: 'imported'

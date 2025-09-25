@@ -60,7 +60,7 @@ router.post('/', async (req, res) => { // Changed route from /drive to /
     const drive = google.drive({ version: 'v3', auth: oauth2Client });
 
     // Build query for files
-    let query = "mimeType='text/plain' or mimeType='application/pdf' or mimeType='text/markdown'";
+    let query = "mimeType='text/plain' or mimeType='application/pdf' or mimeType='text/markdown' or mimeType='application/vnd.google-apps.document' or mimeType='application/vnd.google-apps.spreadsheet' or mimeType='application/vnd.google-apps.presentation'";
     if (folderId) {
       query += ` and '${folderId}' in parents`;
     }
@@ -90,6 +90,14 @@ router.post('/', async (req, res) => { // Changed route from /drive to /
           // For PDFs, we'll just store metadata for now
           // In a real implementation, you'd use a PDF parser
           content = `[PDF File: ${file.name}]`;
+        } else if (file.mimeType === 'application/vnd.google-apps.document' ||
+                   file.mimeType === 'application/vnd.google-apps.spreadsheet' ||
+                   file.mimeType === 'application/vnd.google-apps.presentation') {
+          const exportResponse = await drive.files.export({
+            fileId: file.id!,
+            mimeType: 'text/plain', // Export as plain text
+          });
+          content = exportResponse.data as string;
         }
 
         const contentItem = {
@@ -109,7 +117,7 @@ router.post('/', async (req, res) => { // Changed route from /drive to /
 
         // Save to Firestore (if available)
         if (db) {
-          await db.collection('imported_content').doc(file.id!).set({
+          await db.collection('drive_imports').doc(file.id!).set({
             ...contentItem,
             importedAt: new Date(),
             status: 'imported'
