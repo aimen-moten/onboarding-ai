@@ -87,9 +87,47 @@ router.post('/', async (req, res) => { // Changed route from /drive to /
           });
           content = fileResponse.data as string;
         } else if (file.mimeType === 'application/pdf') {
-          // For PDFs, we'll just store metadata for now
-          // In a real implementation, you'd use a PDF parser
-          content = `[PDF File: ${file.name}]`;
+          const fileResponse = await drive.files.get({
+            fileId: file.id!,
+            alt: 'media', // CRITICAL: Tells Google Drive to return the file content, not metadata
+          }, {
+            responseType: 'arraybuffer' // Get the content as a raw binary buffer
+          });
+
+          const pdfBuffer = Buffer.from(fileResponse.data as ArrayBuffer); // Convert the raw data into a Node.js Buffer
+
+          try {
+            // Use pdf-parse to read the text from the buffer
+            const pdfParse = require('pdf-parse');
+            const data = await pdfParse(pdfBuffer);
+            const pdfText = data.text;
+
+            // Handle large PDFs (optional, but important)
+            // Firestore has a 1 MB per document limit. If your PDFs are big, you’ll need to chunk the text.
+            const MAX_CHUNK_SIZE = 5000; // characters
+            const chunks = pdfText.match(new RegExp(`[\\s\\S]{1,${MAX_CHUNK_SIZE}}`, 'g')) || [];
+
+            if (chunks.length > 1) {
+              // Save chunks to a subcollection
+              for (let i = 0; i < chunks.length; i++) {
+                if (db) {
+                  await db.collection('documents').doc(file.id!).collection('chunks').doc(String(i)).set({
+                    content: chunks[i],
+                    index: i,
+                    importedAt: new Date(),
+                    status: 'imported'
+                  });
+                }
+              }
+              content = `[PDF Content Chunked: ${chunks.length} parts for ${file.name}]`; // Indicate content is chunked
+            } else {
+              content = pdfText;
+            }
+          } catch (error: any) {
+            console.error(`Error parsing PDF content for ${file.name}:`, error.message);
+            // If parsing fails, set content to empty string and log the error
+            content = '';
+          }
         } else if (file.mimeType === 'application/vnd.google-apps.document' ||
                    file.mimeType === 'application/vnd.google-apps.spreadsheet' ||
                    file.mimeType === 'application/vnd.google-apps.presentation') {
@@ -117,8 +155,18 @@ router.post('/', async (req, res) => { // Changed route from /drive to /
 
         // Save to Firestore (if available)
         if (db) {
-          await db.collection('drive_imports').doc(file.id!).set({
-            ...contentItem,
+          // For non-PDFs or single-chunk PDFs, save directly to 'documents' collection
+          // For chunked PDFs, the content field will indicate chunking, and actual content is in subcollection
+          await db.collection('documents').doc(file.id!).set({
+            name: contentItem.title,
+            content: contentItem.content,
+            type: contentItem.mimeType,
+            url: contentItem.url,
+            size: contentItem.size,
+            createdAt: contentItem.createdTime,
+            modifiedAt: contentItem.modifiedTime,
+            source: contentItem.source,
+            userId: contentItem.userId,
             importedAt: new Date(),
             status: 'imported'
           });

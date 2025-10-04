@@ -4,19 +4,20 @@ import { auth } from '../firebase';
 import { signOut } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
 
+import useDrivePicker from 'react-google-drive-picker';
+
 // Environment variables for Google OAuth
-const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 const GOOGLE_REDIRECT_URI = import.meta.env.VITE_GOOGLE_REDIRECT_URI;
 const GOOGLE_SCOPES = 'https://www.googleapis.com/auth/drive.readonly'; // Broader scope for listing all files
+const DEVELOPER_KEY = import.meta.env.VITE_GOOGLE_DEVELOPER_KEY; // From Google Cloud Console
 
 const Dashboard: React.FC = () => {
   const [user, loading, error] = useAuthState(auth);
   const navigate = useNavigate();
 
+  const [openPicker, authResponse] = useDrivePicker();
   const [showNotionModal, setShowNotionModal] = React.useState(false);
-  const [showDriveModal, setShowDriveModal] = React.useState(false);
-  const [driveAccessToken, setDriveAccessToken] = React.useState('');
-  const [driveFolderId, setDriveFolderId] = React.useState('');
   const [importStatus, setImportStatus] = React.useState('');
   const [importError, setImportError] = React.useState('');
   const [notionConnected, setNotionConnected] = React.useState(false);
@@ -47,27 +48,92 @@ const Dashboard: React.FC = () => {
       checkNotionConnection();
     }
 
-    // Handle Google Drive OAuth callback
-    const urlParams = new URLSearchParams(window.location.search);
-    const driveAccessTokenParam = urlParams.get('driveAccessToken');
-
-    if (driveAccessTokenParam) {
-      setDriveAccessToken(driveAccessTokenParam);
-      setShowDriveModal(true);
-      // Clean up the URL
-      window.history.replaceState({}, document.title, window.location.pathname);
-    }
-    
   }, [user]); // The effect depends on the 'user' object to re-run on authentication state change
 
-  const initiateGoogleDriveOAuth = () => {
-    if (!GOOGLE_CLIENT_ID || !GOOGLE_REDIRECT_URI) {
-      setImportError('Google API credentials are not configured. Please check environment variables.');
+  const handleDrivePicker = () => {
+    const accessToken = localStorage.getItem("googleAccessToken");
+
+    if (!accessToken) {
+      console.error("❌ Google Drive access token not available.");
+      alert("Please sign in with Google again to import files.");
+      setImportError("Google Drive access token not available. Please sign in with Google again.");
       return;
     }
-    // Redirect to backend for OAuth flow
-    const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${GOOGLE_CLIENT_ID}&redirect_uri=${GOOGLE_REDIRECT_URI}&scope=${GOOGLE_SCOPES}&response_type=code&access_type=offline&prompt=consent`;
-    window.location.assign(authUrl);
+
+    console.log('Using token:', accessToken); // Debug log for token before opening picker
+
+    openPicker({
+      clientId: CLIENT_ID,
+      developerKey: DEVELOPER_KEY,
+      viewId: 'DOCS', // Show documents/files view
+      token: accessToken,
+      multiselect: true,
+      customScopes: ['https://www.googleapis.com/auth/drive.readonly'],
+      appId: '808599523111', // Google Cloud Project Number
+      
+      // CRITICAL FIX: Ensure the token is captured in the callback
+      callbackFunction: (data) => {
+        if (data.action === 'picked') {
+          console.log('✅ File picked:', data.docs); // Debug log for picked files
+          // The token should now be consistently available from localStorage or authResponse.
+          // We'll still check data.auth?.access_token as a fallback, though it should be less necessary.
+          const currentAccessToken = (data as any).auth?.access_token || accessToken;
+          
+          console.log("Access Token in callback:", currentAccessToken ? "✅ Present" : "❌ Missing"); // Added for troubleshooting
+          
+          if (!currentAccessToken) {
+            // If neither source has the token, log a clear error and STOP.
+            console.error("ERROR: Access token could not be retrieved after file selection.");
+            setImportError("Google Drive access token not available.");
+            return;
+          }
+
+          // 3. Proceed only with a valid token
+          handleProcessFiles(data.docs, currentAccessToken);
+        } else {
+          console.log('⚪ Picker closed'); // Debug log for picker closed
+        }
+      },
+    });
+  };
+
+  const handleProcessFiles = async (files: any[], accessToken: string) => {
+    setImportStatus(`Processing ${files.length} selected files...`);
+
+    // We loop through each selected file
+    for (const file of files) {
+      const fileId = file.id;
+      const fileName = file.name;
+      const mimeType = file.mimeType;
+      
+      // Call the new Genkit AI pipeline endpoint
+      try {
+        const response = await fetch('http://localhost:3001/api/generate/course', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: user?.uid,
+            fileId: fileId,
+            fileName: fileName,
+            mimeType: mimeType,
+            // CRITICAL: Pass the session token for the Genkit Main Agent to use
+            accessToken: accessToken,
+            source: 'drive',
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to start AI processing for ${fileName}.`);
+        }
+        
+        setImportStatus(`Successfully initiated processing for ${fileName}.`);
+
+      } catch (err: any) {
+        setImportError(`Error initiating AI processing for ${fileName}: ${err.message}`);
+        break; // Stop on first error for debugging
+      }
+    }
+    setImportStatus('All selected files have been submitted for AI processing.');
   };
 
   const handleNotionImport = async () => {
@@ -99,38 +165,6 @@ const Dashboard: React.FC = () => {
     }
   };
 
-  const handleDriveImport = async () => {
-    setImportStatus('Importing from Google Drive...');
-    setImportError('');
-    try {
-      // The URL for the drive import is likely also incorrect
-      const response = await fetch('http://localhost:3001/api/drive', { // Changed to /api/drive
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          accessToken: driveAccessToken,
-          folderId: driveFolderId,
-          userId: user?.uid,
-        }),
-      });
-      const data = await response.json();
-      if (data.success) {
-        setImportStatus(`Successfully imported ${data.data.count} files from Google Drive.`);
-      } else {
-        setImportError(data.details || data.error || 'Failed to import from Google Drive.');
-        setImportStatus('');
-      }
-    } catch (err: any) {
-      setImportError(err.message || 'An unexpected error occurred during Google Drive import.');
-      setImportStatus('');
-    } finally {
-      setShowDriveModal(false);
-      setDriveAccessToken('');
-      setDriveFolderId('');
-    }
-  };
 
   const handleSignOut = async () => {
     try {
@@ -333,7 +367,7 @@ const Dashboard: React.FC = () => {
                   Import from Notion
                 </button>
                 <button
-                  onClick={initiateGoogleDriveOAuth}
+                  onClick={handleDrivePicker}
                   style={{
                     backgroundColor: '#4299e1',
                     color: 'white',
@@ -529,98 +563,6 @@ const Dashboard: React.FC = () => {
         </div>
       )}
 
-      {/* Google Drive Import Modal */}
-      {showDriveModal && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(0,0,0,0.5)',
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          zIndex: 1000
-        }}>
-          <div style={{
-            backgroundColor: 'white',
-            padding: '2rem',
-            borderRadius: '8px',
-            boxShadow: '0 5px 15px rgba(0,0,0,0.3)',
-            width: '90%',
-            maxWidth: '500px'
-          }}>
-            <h3 style={{ marginBottom: '1.5rem', color: '#2d3748' }}>Import from Google Drive</h3>
-            {driveAccessToken ? (
-              <>
-                <p style={{ color: '#4a5568', marginBottom: '1.5rem' }}>
-                  You are authenticated with Google Drive. You can now import files.
-                </p>
-                <div style={{ marginBottom: '1.5rem' }}>
-                  <label htmlFor="driveFolderId" style={{ display: 'block', marginBottom: '0.5rem', color: '#4a5568' }}>Google Drive Folder ID (Optional):</label>
-                  <input
-                    type="text"
-                    id="driveFolderId"
-                    value={driveFolderId}
-                    onChange={(e) => setDriveFolderId(e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '0.75rem',
-                      border: '1px solid #e2e8f0',
-                      borderRadius: '4px',
-                      fontSize: '1rem'
-                    }}
-                    placeholder="Enter Google Drive Folder ID"
-                  />
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
-                  <button
-                    onClick={() => {
-                      setShowDriveModal(false);
-                      setDriveAccessToken(''); // Clear token on cancel
-                      setDriveFolderId('');
-                    }}
-                    style={{
-                      backgroundColor: '#e2e8f0',
-                      color: '#2d3748',
-                      border: 'none',
-                      padding: '0.75rem 1.25rem',
-                      borderRadius: '8px',
-                      cursor: 'pointer',
-                      fontSize: '0.9rem',
-                      fontWeight: '600',
-                      transition: 'all 0.2s ease'
-                    }}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleDriveImport}
-                    style={{
-                      backgroundColor: '#4299e1',
-                      color: 'white',
-                      border: 'none',
-                      padding: '0.75rem 1.25rem',
-                      borderRadius: '8px',
-                      cursor: 'pointer',
-                      fontSize: '0.9rem',
-                      fontWeight: '600',
-                      transition: 'all 0.2s ease'
-                    }}
-                  >
-                    Start Import
-                  </button>
-                </div>
-              </>
-            ) : (
-              <p style={{ color: '#4a5568', marginBottom: '1.5rem' }}>
-                Please authenticate with Google Drive to import content.
-              </p>
-            )}
-          </div>
-        </div>
-      )}
 
       {/* Import Status/Error Display */}
       {(importStatus || importError) && (
