@@ -68,7 +68,7 @@ app.post('/api/generate/course', async (req, res) => {
     if (!db) {
         throw new Error("Firestore not initialized.");
     }
-    const docRef = db.collection('courses').doc(fileId);
+    const docRef = db.collection('drive_imports').doc(fileId);
     await docRef.set({
       fileId,
       fileName,
