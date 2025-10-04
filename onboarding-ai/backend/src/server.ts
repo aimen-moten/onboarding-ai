@@ -55,6 +55,7 @@ export { db };
 // Routes
 app.use('/api/notion', notionRoutes);
 app.use('/api/drive', driveRoutes);
+
 app.post('/api/generate/course', async (req, res) => {
   const { userId, fileId, fileName, mimeType, accessToken, source } = req.body;
 
@@ -62,14 +63,11 @@ app.post('/api/generate/course', async (req, res) => {
     return res.status(400).json({ error: 'Missing required data for AI processing.' });
   }
   
-  // LOGIC FROM AI.TS: Store Metadata in Firestore
   try {
-    // Check if db is initialized to prevent crashes
+    // This is the logic that was in ai.ts
     if (!db) {
         throw new Error("Firestore not initialized.");
     }
-    
-    // Using 'courses' collection as per your proposal schema
     const docRef = db.collection('courses').doc(fileId);
     await docRef.set({
       fileId,
@@ -86,7 +84,7 @@ app.post('/api/generate/course', async (req, res) => {
 
   } catch (error: any) {
     console.error('Error saving metadata:', error);
-    res.status(500).json({ error: 'Failed to save metadata to Firestore. Details: ' + error.message });
+    res.status(500).json({ error: 'Internal server error. Failed to save to DB.' });
   }
 });
 
