@@ -7,7 +7,7 @@ import { gemini15Flash } from '@genkit-ai/googleai';
 import { google } from 'googleapis';
 import firebaseAdmin from 'firebase-admin'; // Ensure Firebase Admin is imported/configured
 import * as pdfParse from 'pdf-parse';
-import {ai} from '../index.js';
+import { ai } from '../genkit-config';
 // The Genkit 'ai' instance is initialized in src/index.ts
 
 // Initialize Firebase Admin if not done globally (adjust path as needed)
@@ -28,7 +28,7 @@ const CourseGeneratorInputSchema = z.object({});
 const CourseGeneratorOutputSchema = z.string().describe("A summary of all processed documents.");
 
 
-export const generateCourseFlow = defineFlow(
+export const generateCourseFlow = ai.defineFlow(
   {
     name: 'generateCourse',
     input: CourseGeneratorInputSchema,
