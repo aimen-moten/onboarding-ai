@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "genkit:ui": "genkit start --port 8000 -- npx tsx --env-file .env --watch src/index.ts"
+    "genkit:ui": "GCLOUD_PROJECT=onboardingai-47ab3 genkit start --port 8000 -- npx tsx --env-file ../.env --watch src/index.ts"
   },
   "keywords": [],
   "author": "",

@@ -24,3 +24,9 @@ backend/.env
 *.njsproj
 *.sln
 *.sw?
+
+# Genkit files
+backend/genkit-app/.genkit/runtimes/
+backend/genkit-app/.genkit/servers/
+backend/genkit-app/.genkit/traces/
+backend/genkit-app/.genkit/traces_idx/
