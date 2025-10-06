@@ -3,21 +3,27 @@ import 'dotenv/config'; // Load environment variables from .env file
 import { googleAI } from '@genkit-ai/google-genai';
 import { defineFlow, z } from '@genkit-ai/core';
 import { generate } from '@genkit-ai/ai';
-import { gemini15Flash } from '@genkit-ai/googleai';
 import { google } from 'googleapis';
 import firebaseAdmin from 'firebase-admin'; // Ensure Firebase Admin is imported/configured
-import * as pdfParse from 'pdf-parse';
+import { pdf } from 'pdf-parse';
 import { ai } from '../genkit-config';
 // The Genkit 'ai' instance is initialized in src/index.ts
 
 // Initialize Firebase Admin if not done globally (adjust path as needed)
 if (!firebaseAdmin.apps || firebaseAdmin.apps.length === 0) {
+    const projectId = process.env.FIREBASE_PROJECT_ID;
+    const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
     const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
+
+    if (!projectId || !clientEmail || !privateKey) {
+        throw new Error('Missing Firebase service account environment variables.');
+    }
+
     firebaseAdmin.initializeApp({
         credential: firebaseAdmin.credential.cert({
-            projectId: process.env.FIREBASE_PROJECT_ID,
-            clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-            privateKey: privateKey,
+            projectId,
+            clientEmail,
+            privateKey,
         }),
     });
 }
@@ -31,8 +37,8 @@ const CourseGeneratorOutputSchema = z.string().describe("A summary of all proces
 export const generateCourseFlow = ai.defineFlow(
   {
     name: 'generateCourse',
-    input: CourseGeneratorInputSchema,
-    output: CourseGeneratorOutputSchema,
+    inputSchema: CourseGeneratorInputSchema,
+    outputSchema: CourseGeneratorOutputSchema,
   },
   async () => {
     
@@ -72,7 +78,7 @@ export const generateCourseFlow = ai.defineFlow(
 
           if (mimeType.includes('pdf')) {
             // Parse PDF text
-            const parsed = await pdfParse(buffer);
+            const parsed = await pdf(buffer);
             fileText = parsed.text;
           } else {
             // For DOCX/PPTX, simpler buffer-to-string often works best for rough text extraction
