@@ -61,7 +61,7 @@ type CourseData = z.infer<typeof CourseOutputSchema>;
  */
 async function fetchAndCombineContent(): Promise<string> {
     const docsSnapshot = await db.collection('drive_imports')
-        .where('status', 'in', ['PENDING_AI', 'PROCESSING'])
+        .where('status', '==', 'PENDING_AI')
         .get();
 
     if (docsSnapshot.empty) {
@@ -82,13 +82,37 @@ async function fetchAndCombineContent(): Promise<string> {
             auth.setCredentials({ access_token: accessToken });
             const drive = google.drive({ version: 'v3', auth });
 
-            // ... (Your complex download and parsing logic goes here, similar to your original code)
-            
-            // NOTE: Using a simplified mock for now to test the chain
-            const mockContent = `FAQ: When paid? 15th/30th. Expenses: Expensify, submit within 30 days. Technical Policy: Code on GitHub, secrets via .env, PRs require 1 approval.`;
-            fileText = mockContent;
+            // CRITICAL: Download the content based on MIME type
+            if (mimeType.includes('pdf') || mimeType.includes('openxmlformats')) {
+                // Case 1: Binary Files (PDF, PPTX, DOCX) - Use alt='media'
+                const response = await drive.files.get(
+                    { fileId: fileId, alt: 'media' },
+                    { responseType: 'arraybuffer' }
+                );
 
-            // Mark file as PROCESSING
+                const buffer = Buffer.from(response.data as ArrayBuffer);
+
+                if (mimeType.includes('pdf')) {
+                    // Parse PDF text
+                    const parsed = await pdf(buffer);
+                    fileText = parsed.text;
+                } else {
+                    // For DOCX/PPTX, simpler buffer-to-string often works best for rough text extraction
+                    fileText = buffer.toString('utf8');
+                }
+            } else if (mimeType.includes('google-apps.presentation') || mimeType.includes('google-apps.document')) {
+                // Case 2: Google Native Files (Docs, Slides) - Use files.export
+                const response = await drive.files.export(
+                    { fileId: fileId, mimeType: 'text/plain' },
+                    { responseType: 'arraybuffer' }
+                );
+                fileText = Buffer.from(response.data as ArrayBuffer).toString('utf8');
+            } else {
+                // Catch-all for plain text, etc.
+                fileText = `Could not process file type for ${fileName}.`;
+            }
+
+            // Update status in Firestore
             await doc.ref.update({ status: 'PROCESSING', processedAt: new Date() });
 
         } catch (e: any) {
