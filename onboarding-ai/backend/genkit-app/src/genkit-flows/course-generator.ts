@@ -4,7 +4,8 @@ import { z, flow } from '@genkit-ai/core';
 import { google } from 'googleapis';
 import firebaseAdmin from 'firebase-admin';
 import { pdf } from 'pdf-parse';
-import { ai } from '../genkit-config'; // Assuming 'ai' is your initialized Genkit engine
+import { ai } from '../genkit-config';
+import { onCallGenkit } from 'firebase-functions/https';
 
 // --- FIREBASE ADMIN INITIALIZATION ---
 if (!firebaseAdmin.apps || firebaseAdmin.apps.length === 0) {
@@ -283,3 +284,5 @@ export const generateCourseFlow = ai.defineFlow(
         return `✅ Successfully generated and saved course: ${structuredCourseData.course_title}`;
     },
 );
+
+export const courseGenerator = onCallGenkit(generateCourseFlow);

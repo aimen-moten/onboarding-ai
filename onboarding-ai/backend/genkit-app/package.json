@@ -16,8 +16,10 @@
     "typescript": "^5.9.3"
   },
   "dependencies": {
+    "@genkit-ai/express": "^1.21.0",
     "@genkit-ai/google-genai": "^1.20.0",
     "dotenv": "^17.2.3",
+    "firebase-functions": "^6.6.0",
     "genkit": "^1.20.0"
   }
 }

@@ -23,6 +23,7 @@ const Dashboard: React.FC = () => {
   const [notionConnected, setNotionConnected] = React.useState(false);
   const [notionWorkspaceName, setNotionWorkspaceName] = React.useState('');
 
+
   React.useEffect(() => {
     const checkNotionConnection = async () => {
       try {
@@ -100,15 +101,13 @@ const Dashboard: React.FC = () => {
   const handleProcessFiles = async (files: any[], accessToken: string) => {
     setImportStatus(`Processing ${files.length} selected files...`);
 
-    // We loop through each selected file
     for (const file of files) {
       const fileId = file.id;
       const fileName = file.name;
       const mimeType = file.mimeType;
       
-      // Call the new Genkit AI pipeline endpoint
       try {
-        const response = await fetch('http://localhost:3001/api/generate/course', {
+        const response = await fetch('http://localhost:3001/api/drive/import-metadata', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -116,25 +115,51 @@ const Dashboard: React.FC = () => {
             fileId: fileId,
             fileName: fileName,
             mimeType: mimeType,
-            // CRITICAL: Pass the session token for the Genkit Main Agent to use
             accessToken: accessToken,
             source: 'drive',
           }),
         });
 
         if (!response.ok) {
-          throw new Error(`Failed to start AI processing for ${fileName}.`);
+          throw new Error(`Failed to save metadata for ${fileName}.`);
         }
         
-        setImportStatus(`Successfully initiated processing for ${fileName}.`);
+        setImportStatus(`Successfully saved metadata for ${fileName}.`);
 
       } catch (err: any) {
-        setImportError(`Error initiating AI processing for ${fileName}: ${err.message}`);
-        break; // Stop on first error for debugging
+        setImportError(`Error saving metadata for ${fileName}: ${err.message}`);
+        break;
       }
     }
-    setImportStatus('All selected files have been submitted for AI processing.');
+    setImportStatus('All selected files have been submitted for metadata import.');
   };
+
+  const handleGenerateCourse = async () => {
+    setImportStatus('Starting AI Course generation...');
+    setImportError('');
+    
+    try {
+        const response = await fetch('http://localhost:3001/api/course/start-generation', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                userId: user?.uid,
+            }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.details || data.error || 'Unknown error starting AI flow.');
+        }
+
+        setImportStatus(data.message);
+        
+    } catch (err: any) {
+        setImportError(`Error starting AI flow: ${err.message}`);
+        setImportStatus('');
+    }
+};
 
   const handleNotionImport = async () => {
     setImportStatus('Importing from Notion...');
@@ -308,7 +333,7 @@ const Dashboard: React.FC = () => {
             marginBottom: '2rem',
             fontSize: '1.1rem'
           }}>
-            Transform your static company documents into interactive training experiences. 
+            Transform your static company documents into interactive training experiences.
             Import content from Notion or Google Drive and let AI generate quizzes and flashcards.
           </p>
 
@@ -417,18 +442,29 @@ const Dashboard: React.FC = () => {
                 Let AI create quizzes and flashcards from your content
               </p>
               <button
-                disabled
-                style={{
-                  backgroundColor: '#6c757d',
-                  color: 'white',
-                  border: 'none',
-                  padding: '0.75rem 1.5rem',
-                  borderRadius: '4px',
-                  cursor: 'not-allowed',
-                  fontSize: '0.9rem'
-                }}
+                  onClick={handleGenerateCourse}
+                  style={{
+                      backgroundColor: '#48bb78',
+                      color: 'white',
+                      border: 'none',
+                      padding: '0.75rem 1.5rem',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      fontSize: '0.9rem',
+                      fontWeight: '600',
+                      transition: 'all 0.2s ease',
+                      boxShadow: '0 2px 4px rgba(72, 187, 120, 0.2)'
+                  }}
+                  onMouseOver={(e) => {
+                      e.currentTarget.style.backgroundColor = '#38a169';
+                      e.currentTarget.style.transform = 'translateY(-1px)';
+                  }}
+                  onMouseOut={(e) => {
+                      e.currentTarget.style.backgroundColor = '#48bb78';
+                      e.currentTarget.style.transform = 'translateY(0)';
+                  }}
               >
-                Coming Soon
+                  Generate Course
               </button>
             </div>
 

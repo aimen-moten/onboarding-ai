@@ -9,6 +9,8 @@ import { initializeApp, cert } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import notionRoutes from './routes/notion.js';
 import driveRoutes from './routes/drive';
+import { courseGenerator } from '../genkit-app/src/genkit-flows/course-generator.js';
+
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -56,15 +58,14 @@ export { db };
 app.use('/api/notion', notionRoutes);
 app.use('/api/drive', driveRoutes);
 
-app.post('/api/generate/course', async (req, res) => {
+app.post('/api/drive/import-metadata', async (req, res) => {
   const { userId, fileId, fileName, mimeType, accessToken, source } = req.body;
 
   if (!userId || !fileId || !accessToken) {
-    return res.status(400).json({ error: 'Missing required data for AI processing.' });
+    return res.status(400).json({ error: 'Missing required data for file import.' });
   }
   
   try {
-    // This is the logic that was in ai.ts
     if (!db) {
         throw new Error("Firestore not initialized.");
     }
@@ -76,16 +77,43 @@ app.post('/api/generate/course', async (req, res) => {
       source,
       userId,
       accessToken,
-      status: 'PENDING_AI',
+      status: 'READY_FOR_AI',
       timestamp: new Date(),
     });
 
-    res.json({ success: true, message: 'File metadata saved and processing started.' });
+    res.json({ success: true, message: `File metadata for ${fileName} saved.` });
 
   } catch (error: any) {
     console.error('Error saving metadata:', error);
     res.status(500).json({ error: 'Internal server error. Failed to save to DB.' });
   }
+});
+
+
+app.post('/api/course/start-generation', async (req, res) => {
+    const { userId } = req.body;
+    console.log('HITS HERE!');
+    if (!userId) {
+        return res.status(400).json({ error: 'Missing userId to initiate course generation.' });
+    }
+    
+    try {
+        console.log(`Attempting to trigger Genkit flow`);
+        
+        const genkitResponse = await courseGenerator.run({
+            data: {} // Empty object input matches your z.object({}) schema
+        }); 
+
+        res.json({
+            success: true,
+            message: '✅ AI Course generation pipeline started successfully. Check logs for progress.',
+            output: genkitResponse, // Optionally return the output of the Genkit flow
+        });
+
+    } catch (error) {
+        console.error('Error calling Genkit server:', error);
+        res.status(500).json({ error: 'Internal server error. Could not connect to Genkit service.' });
+    }
 });
 
 // Test endpoint
