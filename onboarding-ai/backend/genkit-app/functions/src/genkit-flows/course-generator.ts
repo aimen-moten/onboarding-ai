@@ -1,11 +1,11 @@
-import 'dotenv/config'; 
+import dotenv from 'dotenv';
+dotenv.config({ path: '../../../.env' });
 import { googleAI } from '@genkit-ai/google-genai';
-import { z, flow } from '@genkit-ai/core';
+import { z } from '@genkit-ai/core';
 import { google } from 'googleapis';
 import firebaseAdmin from 'firebase-admin';
 import { pdf } from 'pdf-parse';
 import { ai } from '../genkit-config';
-import { onCallGenkit } from 'firebase-functions/https';
 
 // --- FIREBASE ADMIN INITIALIZATION ---
 if (!firebaseAdmin.apps || firebaseAdmin.apps.length === 0) {
@@ -27,6 +27,7 @@ if (!firebaseAdmin.apps || firebaseAdmin.apps.length === 0) {
     });
 }
 const db = firebaseAdmin.firestore();
+
 
 // ----------------------------------------------------------------------
 // 1. SCHEMAS: Define the structured outputs
@@ -284,5 +285,3 @@ export const generateCourseFlow = ai.defineFlow(
         return `✅ Successfully generated and saved course: ${structuredCourseData.course_title}`;
     },
 );
-
-export const courseGenerator = onCallGenkit(generateCourseFlow);
