@@ -768,6 +768,7 @@ const Dashboard: React.FC = () => {
           }}>
             <h2 style={{
               fontSize: '2.5rem',
+              color: '#2d3748',
               fontWeight: '400',
               textAlign: 'center',
               marginBottom: '2rem',
@@ -789,9 +790,10 @@ const Dashboard: React.FC = () => {
                             padding: '1rem 0',
                             borderBottom: '1px solid #e2e8f0',
                             // The container from your image
-                            backgroundColor: '#fff',
+                            backgroundColor: '#f7f7f7ff',
                             margin: '10px 0',
                             paddingLeft: '15px',
+                            paddingRight: '15px',
                             boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
                         }}
                     >
@@ -868,14 +870,33 @@ const Dashboard: React.FC = () => {
             maxHeight: '90%',
             overflowY: 'auto'
           }}>
-            <h2 style={{
-              textAlign: 'center',
-              color: '#2d3748',
-              marginBottom: '2rem',
-              fontSize: '2rem'
-            }}>
-              Quiz for Course: {courses.find(c => c.id === selectedCourseId)?.title || 'Loading...'}
-            </h2>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+              <h2 style={{
+                textAlign: 'center',
+                color: '#2d3748',
+                fontSize: '2rem',
+                flexGrow: 1, // Allows the title to take up available space
+                margin: 0 // Reset margin to prevent misalignment
+              }}>
+                Quiz for Course: {courses.find(c => c.id === selectedCourseId)?.title || 'Loading...'}
+              </h2>
+              <button
+                onClick={() => setShowQuizModal(false)}
+                style={{
+                  backgroundColor: 'transparent',
+                  border: 'none',
+                  fontSize: '1.5rem',
+                  cursor: 'pointer',
+                  color: '#718096',
+                  padding: '0.5rem',
+                  transition: 'color 0.2s ease',
+                }}
+                onMouseOver={(e) => e.currentTarget.style.color = '#2d3748'}
+                onMouseOut={(e) => e.currentTarget.style.color = '#718096'}
+              >
+                &times; {/* HTML entity for 'x' mark */}
+              </button>
+            </div>
 
             {quizzes.length === 0 && !importStatus && !importError ? (
                 <p style={{ textAlign: 'center', color: '#718096' }}>No quizzes found for this course.</p>
@@ -947,24 +968,7 @@ const Dashboard: React.FC = () => {
                 ))
             )}
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '2rem' }}>
-              <button
-                onClick={() => setShowQuizModal(false)}
-                style={{
-                  backgroundColor: '#e53e3e',
-                  color: 'white',
-                  border: 'none',
-                  padding: '0.75rem 1.25rem',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  fontSize: '0.9rem',
-                  fontWeight: '600',
-                  transition: 'all 0.2s ease'
-                }}
-              >
-                Close Quiz
-              </button>
-            </div>
+            {/* The "Close Quiz" button is now redundant as the 'x' button handles closing */}
           </div>
         </div>
       )}
