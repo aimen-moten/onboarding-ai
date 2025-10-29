@@ -255,6 +255,7 @@ export const generateCourseFlow = ai.defineFlow(
     },
     async () => {
         // Get the pending documents snapshot before content fetching
+        console.log('Retrieving pending documents for processing...');
         const pendingDocsSnapshot = await db.collection('drive_imports')
             .where('status', 'in', ['PENDING_AI', 'PROCESSING'])
             .get();
@@ -265,6 +266,7 @@ export const generateCourseFlow = ai.defineFlow(
 
         // --- STEP 1: Main Agent (Fetch and Combine Content) ---
         // This function now returns all the raw text from all pending documents
+        console.log('Fetching and combining content from pending documents...');
         const rawContentText = await fetchAndCombineContent();
 
         if (rawContentText.includes('No pending documents')) {
@@ -272,6 +274,7 @@ export const generateCourseFlow = ai.defineFlow(
         }
 
         // --- STEP 2: Categorization and Quiz Generation ---
+        console.log('Generating categories and quizzes from combined content...');
         const structuredCourseData = await categorizeAndQuizTool(rawContentText);
 
         if (!structuredCourseData || !structuredCourseData.course_title) {
@@ -280,6 +283,7 @@ export const generateCourseFlow = ai.defineFlow(
         }
 
         // --- STEP 3: Final Database Write (Persistence) ---
+        console.log('Saving generated course data to Firestore...');
         await saveCourseToFirestore(structuredCourseData, pendingDocsSnapshot.docs);
 
         return `✅ Successfully generated and saved course: ${structuredCourseData.course_title}`;
