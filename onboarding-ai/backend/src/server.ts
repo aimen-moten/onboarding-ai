@@ -37,6 +37,42 @@ app.get('/api/courses', async (req, res) => {
   }
 });
 
+/**
+ * 💡 FIX: Querying the top-level 'quizzes' collection and filtering by courseId.
+ * It ensures 'question', 'choices', and 'correct_answer' are returned.
+ */
+app.get('/api/quizzes', async (req, res) => {
+  try {
+    if (!adminDb) throw new Error('Firestore not initialized.');
+
+    const { courseId } = req.query;
+    if (!courseId || typeof courseId !== 'string') {
+      return res.status(400).json({ error: 'Missing or invalid courseId parameter.' });
+    }
+
+    // Correctly query the top-level 'quizzes' collection
+    const quizzesRef = adminDb.collection('quizzes').where('courseId', '==', courseId);
+    const snapshot = await quizzesRef.get();
+    
+    const quizzes = snapshot.docs.map(doc => {
+      const data = doc.data();
+      // Ensure all required fields are mapped
+      return {
+        id: doc.id,
+        courseId: data.courseId,
+        question: data.question,
+        choices: data.choices, // Assumes choices is an array of strings
+        correct_answer: data.correct_answer, // The string that matches the correct choice
+      };
+    });
+    
+    res.json({ success: true, quizzes });
+  } catch (error: any) {
+    console.error('Error fetching quizzes:', error);
+    res.status(500).json({ error: 'Internal server error. Failed to fetch quizzes.' });
+  }
+});
+
 app.post('/api/drive/import-metadata', async (req, res) => {
   const { userId, fileId, fileName, mimeType, accessToken, source } = req.body;
   if (!userId || !fileId || !accessToken) return res.status(400).json({ error: 'Missing required data for file import.' });

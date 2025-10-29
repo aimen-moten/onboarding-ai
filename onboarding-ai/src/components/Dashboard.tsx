@@ -22,7 +22,8 @@ interface QuizQuestion {
   id: string; // Document ID of the quiz
   courseId: string;
   question: string;
-  choices: QuizChoice[];
+  choices: QuizChoice[]; // This is the structured list of choices
+  correct_answer: string; // This is the plain text of the correct answer
 }
 
 interface Course {
@@ -237,15 +238,16 @@ const Dashboard: React.FC = () => {
         throw new Error(data.error || 'Failed to fetch quizzes.');
       }
       
-      // Ensure the data structure matches the QuizQuestion interface
+      // 💡 FIX: Map the simple array of choice strings (data.choices) to the required structure
+      // by comparing each choice text against the correct_answer string.
       const fetchedQuizzes: QuizQuestion[] = data.quizzes.map((quiz: any) => ({
         id: quiz.id,
         courseId: quiz.courseId,
         question: quiz.question,
-        // Ensure choices have the 'text' and 'isCorrect' fields
-        choices: quiz.choices.map((choice: any) => ({
-          text: choice.text,
-          isCorrect: choice.isCorrect,
+        correct_answer: quiz.correct_answer, // Keep the correct answer string
+        choices: quiz.choices.map((choice: string) => ({
+          text: choice,
+          isCorrect: choice === quiz.correct_answer, // Determine correctness here
         })),
       }));
 
