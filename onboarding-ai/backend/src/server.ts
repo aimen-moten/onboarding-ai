@@ -35,7 +35,7 @@ app.post('/api/drive/import-metadata', async (req, res) => {
       source,
       userId,
       accessToken,
-      status: 'READY_FOR_AI',
+      status: 'PENDING_AI',
       timestamp: new Date(),
     });
 

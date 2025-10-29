@@ -1,3 +1,5 @@
+console.log('FUNCTIONS_EMULATOR_HOST:', process.env.FUNCTIONS_EMULATOR_HOST);
+
 import admin from 'firebase-admin';
 import { initializeApp as clientInitializeApp } from 'firebase/app';
 import { getFunctions as getClientFunctions, httpsCallable, connectFunctionsEmulator } from 'firebase/functions';
