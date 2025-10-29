@@ -1,6 +1,6 @@
 import express from 'express';
 import { Client } from '@notionhq/client';
-import { db } from '../server';
+import { adminDb } from '../firebaseServer';
 
 const router = express.Router();
 
@@ -77,8 +77,8 @@ router.post('/import', async (req, res) => {
 
           importedContent.push(contentItem);
 
-          if (db) {
-            await db.collection('notion_imports').doc(page.id).set({
+          if (adminDb) {
+            await adminDb.collection('notion_imports').doc(page.id).set({
               ...contentItem,
               importedAt: new Date(),
               status: 'imported'
