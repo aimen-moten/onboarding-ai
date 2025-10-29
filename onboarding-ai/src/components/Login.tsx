@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult } from 'firebase/auth';
+import { GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, getAuth } from 'firebase/auth';
 import { auth, googleProvider } from '../firebase';
 import { useNavigate } from 'react-router-dom';
 import { useAuthState } from 'react-firebase-hooks/auth';
@@ -43,17 +43,37 @@ const Login: React.FC = () => {
       // Try popup first, fallback to redirect if popup fails
       try {
         const result = await signInWithPopup(auth, googleProvider);
-        const credential = GoogleAuthProvider.credentialFromResult(result);
+        const credential = GoogleAuthProvider.credentialFromResult(result) as any; // Cast to any to access refreshToken
         const accessToken = credential?.accessToken;
+        const refreshToken = credential?.refreshToken; // Access refreshToken
 
-        if (!accessToken) {
-          console.error("❌ No access token returned from popup sign-in.");
-          setError("Failed to get Google Drive access token.");
+        if (!accessToken || !refreshToken) {
+          console.error("❌ No access or refresh token returned from popup sign-in.");
+          setError("Failed to get Google Drive access/refresh token.");
           return;
         }
 
+        console.log("Attempting to save Google access token to localStorage:", accessToken);
         localStorage.setItem("googleAccessToken", accessToken);
-        console.log("✅ Google access token saved:", accessToken);
+        console.log("✅ Google access token saved to localStorage.");
+
+        // Send tokens to backend for secure storage
+        if (result.user.uid) {
+          await fetch('http://localhost:3001/api/auth/store-tokens', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${await result.user.getIdToken()}` // Authenticate backend call
+            },
+            body: JSON.stringify({
+              userId: result.user.uid,
+              accessToken: accessToken,
+              refreshToken: refreshToken,
+            }),
+          });
+          console.log("✅ Tokens sent to backend for storage.");
+        }
+
         console.log('✅ User signed in successfully:', result.user.displayName || result.user.email);
         navigate('/dashboard');
       } catch (popupError: any) {

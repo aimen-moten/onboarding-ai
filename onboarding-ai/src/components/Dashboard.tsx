@@ -25,6 +25,15 @@ const Dashboard: React.FC = () => {
 
 
   React.useEffect(() => {
+    const storedAccessToken = localStorage.getItem("googleAccessToken");
+    if (storedAccessToken) {
+      console.log("Dashboard mounted: Google access token found in localStorage.");
+    } else {
+      console.log("Dashboard mounted: Google access token NOT found in localStorage.");
+    }
+  }, []); // Run once on mount
+
+  React.useEffect(() => {
     const checkNotionConnection = async () => {
       try {
         // Corrected URL to match your server.ts mounting point

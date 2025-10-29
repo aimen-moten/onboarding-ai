@@ -7,6 +7,11 @@ import firebaseAdmin from 'firebase-admin';
 import { pdf } from 'pdf-parse';
 import { ai } from '../genkit-config';
 
+// Environment variables for Google OAuth
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
+const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
+const GOOGLE_REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI; // Needed for OAuth2Client
+
 // --- FIREBASE ADMIN INITIALIZATION ---
 if (!firebaseAdmin.apps || firebaseAdmin.apps.length === 0) {
     const projectId = process.env.FIREBASE_PROJECT_ID;
@@ -59,11 +64,50 @@ type CourseData = z.infer<typeof CourseOutputSchema>;
 // ----------------------------------------------------------------------
 
 /**
+ * Helper function to refresh Google Drive access token.
+ */
+async function refreshGoogleDriveAccessToken(userId: string, currentRefreshToken: string): Promise<string | null> {
+    if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET || !GOOGLE_REDIRECT_URI) {
+        console.error('Missing Google OAuth environment variables for token refresh.');
+        return null;
+    }
+
+    const oauth2Client = new google.auth.OAuth2(
+        GOOGLE_CLIENT_ID,
+        GOOGLE_CLIENT_SECRET,
+        GOOGLE_REDIRECT_URI
+    );
+
+    oauth2Client.setCredentials({
+        refresh_token: currentRefreshToken,
+    });
+
+    try {
+        const { credentials } = await oauth2Client.refreshAccessToken();
+        const newAccessToken = credentials.access_token;
+
+        if (newAccessToken) {
+            // Update the user_tokens collection with the new access token
+            await db.collection('user_tokens').doc(userId).update({
+                googleDriveAccessToken: newAccessToken,
+                updatedAt: new Date(),
+            });
+            console.log(`✅ Refreshed access token for user ${userId}`);
+            return newAccessToken;
+        }
+        return null;
+    } catch (error: any) {
+        console.error(`❌ Error refreshing access token for user ${userId}:`, error.message);
+        return null;
+    }
+}
+
+/**
  * Main Agent: Fetches all content from Drive imports and combines it into a single string.
  */
 async function fetchAndCombineContent(): Promise<string> {
     const docsSnapshot = await db.collection('drive_imports')
-        .where('status', '==', 'PENDING_AI')
+        .where('status', 'in', ['PENDING_AI', 'READY_FOR_AI']) // Also consider READY_FOR_AI
         .get();
 
     if (docsSnapshot.empty) {
@@ -74,12 +118,33 @@ async function fetchAndCombineContent(): Promise<string> {
 
     for (const doc of docsSnapshot.docs) {
         const metadata = doc.data();
-        const { fileId, fileName, mimeType, accessToken } = metadata;
+        let { fileId, fileName, mimeType, accessToken, userId } = metadata; // Get userId here
 
         let fileText = `[File: ${fileName} - ${mimeType}]`;
 
         try {
-            // Initialize Google Drive Client using the user's ephemeral accessToken
+            // Attempt to refresh token if it's likely expired or if we have a refresh token
+            const userTokensDoc = await db.collection('user_tokens').doc(userId).get();
+            if (userTokensDoc.exists) {
+                const userTokens = userTokensDoc.data();
+                const refreshToken = userTokens?.googleDriveRefreshToken;
+
+                if (refreshToken) {
+                    const newAccessToken = await refreshGoogleDriveAccessToken(userId, refreshToken);
+                    if (newAccessToken) {
+                        accessToken = newAccessToken; // Use the new access token
+                        // Update the drive_imports document with the new access token
+                        await doc.ref.update({ accessToken: newAccessToken, status: 'READY_FOR_AI' });
+                    } else {
+                        // If refresh failed, mark the document with an error and skip
+                        await doc.ref.update({ status: 'ERROR', error: 'Failed to refresh access token.' });
+                        console.error(`Skipping file ${fileId} due to failed token refresh.`);
+                        continue;
+                    }
+                }
+            }
+
+            // Initialize Google Drive Client using the (potentially new) accessToken
             const auth = new google.auth.OAuth2();
             auth.setCredentials({ access_token: accessToken });
             const drive = google.drive({ version: 'v3', auth });

@@ -12,9 +12,11 @@ import { getFirestore } from 'firebase-admin/firestore';
 // Firebase Client SDK (for callable functions)
 import { initializeApp as initializeClientApp } from 'firebase/app';
 import { getFunctions, httpsCallable, connectFunctionsEmulator } from 'firebase/functions';
+import { runFlow } from 'genkit/beta/client';
 
 import notionRoutes from './routes/notion.js';
 import driveRoutes from './routes/drive.js';
+import authRoutes from './routes/auth.js'; // Import the new auth routes
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -72,6 +74,7 @@ connectFunctionsEmulator(functions, 'localhost', 5001); // Emulator port
 // ----------------- Routes -----------------
 app.use('/api/notion', notionRoutes);
 app.use('/api/drive', driveRoutes);
+app.use('/api/auth', authRoutes); // Mount the new auth routes
 
 app.post('/api/drive/import-metadata', async (req, res) => {
   const { userId, fileId, fileName, mimeType, accessToken, source } = req.body;
@@ -106,8 +109,13 @@ app.post('/api/course/start-generation', async (req, res) => {
 
   try {
     console.log('Triggering Genkit flow via Firebase Emulator...');
-    const runCourseGenerator = httpsCallable(getFunctions(), 'courseGenerator');
-    const result = await runCourseGenerator({ userId }); // send input matching your Genkit schema
+    const result = await runFlow({
+      url: 'http://127.0.0.1:5001/onboardingai-47ab3/us-central1/courseGenerator', // Using the courseGenerator flow URL
+      input: { userId }, // send input matching your Genkit schema
+    });
+
+    console.log('comes back')
+    console.log(result);
 
     res.json({
       success: true,
@@ -139,6 +147,8 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 
 // ----------------- Start Server -----------------
 console.log('✅ Notion routes mounted at /api/notion');
+console.log('✅ Drive routes mounted at /api/drive');
+console.log('✅ Auth routes mounted at /api/auth'); // Log the new route
 app.listen(PORT, () => {
   console.log(`🚀 Backend server running on port ${PORT}`);
   console.log(`📊 Health check: http://localhost:${PORT}/api/health`);

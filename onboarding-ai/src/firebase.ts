@@ -30,7 +30,9 @@ googleProvider.addScope("https://www.googleapis.com/auth/drive.readonly");
 googleProvider.addScope("https://www.googleapis.com/auth/drive.file");
 // Set custom parameters for popup authentication
 googleProvider.setCustomParameters({
-  prompt: 'select_account'
+  prompt: 'consent', // Ensure consent screen is shown to get refresh token
+  access_type: 'offline', // CRITICAL: Request a refresh token
+  select_account: 'true', // Ensure user can select account
 });
 
 export default app;
