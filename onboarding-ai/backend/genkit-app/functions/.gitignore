@@ -8,3 +8,10 @@ typings/
 # Node.js dependency directory
 node_modules/
 *.local
+
+.genkit/
+backend/genkit-app/functions/.genkit/
+
+backend/onboardingai-47ab3-7752e81a594a.json
+
+backend/genkit-app/functions/.genkit/servers/tools-37661.json
