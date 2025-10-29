@@ -20,6 +20,23 @@ app.use(express.json());
 app.use('/api/notion', notionRoutes);
 app.use('/api/drive', driveRoutes);
 
+app.get('/api/courses', async (req, res) => {
+  try {
+    if (!adminDb) throw new Error('Firestore not initialized.');
+
+    const coursesRef = adminDb.collection('courses');
+    const snapshot = await coursesRef.get();
+    const courses = snapshot.docs.map(doc => ({
+      id: doc.id,
+      title: doc.data().title,
+    }));
+    res.json({ success: true, courses });
+  } catch (error: any) {
+    console.error('Error fetching courses:', error);
+    res.status(500).json({ error: 'Internal server error. Failed to fetch courses.' });
+  }
+});
+
 app.post('/api/drive/import-metadata', async (req, res) => {
   const { userId, fileId, fileName, mimeType, accessToken, source } = req.body;
   if (!userId || !fileId || !accessToken) return res.status(400).json({ error: 'Missing required data for file import.' });

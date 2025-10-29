@@ -1,16 +1,36 @@
 import React from 'react';
 import { useAuthState } from 'react-firebase-hooks/auth';
-import { auth } from '../firebase';
+import { auth } from '../firebase'; // Assuming db is no longer directly used here
 import { signOut } from 'firebase/auth';
+// Removed collection, getDocs import since they are not used in this file
 import { useNavigate } from 'react-router-dom';
 
 import useDrivePicker from 'react-google-drive-picker';
 
 // Environment variables for Google OAuth
 const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-const GOOGLE_REDIRECT_URI = import.meta.env.VITE_GOOGLE_REDIRECT_URI;
-const GOOGLE_SCOPES = 'https://www.googleapis.com/auth/drive.readonly'; // Broader scope for listing all files
-const DEVELOPER_KEY = import.meta.env.VITE_GOOGLE_DEVELOPER_KEY; // From Google Cloud Console
+// Removed unused GOOGLE_REDIRECT_URI and GOOGLE_SCOPES
+const DEVELOPER_KEY = import.meta.env.VITE_GOOGLE_DEVELOPER_KEY;
+
+// --- TYPE DEFINITIONS FOR CLARITY ---
+interface QuizChoice {
+  text: string;
+  isCorrect: boolean;
+}
+
+interface QuizQuestion {
+  id: string; // Document ID of the quiz
+  courseId: string;
+  question: string;
+  choices: QuizChoice[];
+}
+
+interface Course {
+  id: string;
+  title: string;
+}
+// -----------------------------------
+
 
 const Dashboard: React.FC = () => {
   const [user, loading, error] = useAuthState(auth);
@@ -22,6 +42,17 @@ const Dashboard: React.FC = () => {
   const [importError, setImportError] = React.useState('');
   const [notionConnected, setNotionConnected] = React.useState(false);
   const [notionWorkspaceName, setNotionWorkspaceName] = React.useState('');
+  
+  const [showCourseSelectionModal, setShowCourseSelectionModal] = React.useState(false);
+  const [courses, setCourses] = React.useState<Course[]>([]);
+
+  // --- NEW STATES FOR QUIZ FEATURE ---
+  const [showQuizModal, setShowQuizModal] = React.useState(false);
+  const [selectedCourseId, setSelectedCourseId] = React.useState<string | null>(null);
+  const [quizzes, setQuizzes] = React.useState<QuizQuestion[]>([]);
+  // State to track user's answers and display status (key is quiz ID, value is index of selected choice)
+  const [userAnswers, setUserAnswers] = React.useState<Record<string, number | null>>({});
+  // -----------------------------------
 
 
   React.useEffect(() => {
@@ -161,7 +192,86 @@ const Dashboard: React.FC = () => {
     }
 };
 
-  const handleNotionImport = async () => {
+  const handleTakeQuiz = async () => {
+    // Reset previous quiz state
+    setQuizzes([]);
+    setSelectedCourseId(null);
+    setUserAnswers({});
+    setShowQuizModal(false);
+    
+    setShowCourseSelectionModal(true);
+    setImportStatus('Loading courses...');
+    setImportError('');
+    try {
+      // Endpoint to fetch courses from firestore (you must implement this in server.ts)
+      const response = await fetch('http://localhost:3001/api/courses'); 
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to fetch courses.');
+      }
+
+      setCourses(data.courses);
+      setImportStatus('');
+    } catch (err: any) {
+      setImportError(`Error fetching courses: ${err.message}`);
+      setImportStatus('');
+      setShowCourseSelectionModal(false); // Close if fetching fails
+    }
+  };
+ 
+  // --- HANDLER: FETCH QUIZZES FOR A SELECTED COURSE ---
+  const handleTakeCourse = async (courseId: string) => {
+    setSelectedCourseId(courseId);
+    setShowCourseSelectionModal(false); // Close course selection modal
+    setShowQuizModal(true); // Open quiz modal
+    setImportStatus('Loading quizzes...');
+    setImportError('');
+    
+    try {
+      // Endpoint to fetch quizzes for a specific courseId (you must implement this in server.ts)
+      const response = await fetch(`http://localhost:3001/api/quizzes?courseId=${courseId}`);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to fetch quizzes.');
+      }
+      
+      // Ensure the data structure matches the QuizQuestion interface
+      const fetchedQuizzes: QuizQuestion[] = data.quizzes.map((quiz: any) => ({
+        id: quiz.id,
+        courseId: quiz.courseId,
+        question: quiz.question,
+        // Ensure choices have the 'text' and 'isCorrect' fields
+        choices: quiz.choices.map((choice: any) => ({
+          text: choice.text,
+          isCorrect: choice.isCorrect,
+        })),
+      }));
+
+      setQuizzes(fetchedQuizzes);
+      setImportStatus('Quizzes loaded successfully. Start testing!');
+      setImportError('');
+    } catch (err: any) {
+      setImportError(`Error fetching quizzes: ${err.message}`);
+      setImportStatus('');
+      setQuizzes([]);
+    }
+  };
+
+  // --- HANDLER: INTERACTIVE QUIZ LOGIC ---
+  const handleAnswerSelection = (quizId: string, choiceIndex: number) => {
+    // Only allow selecting an answer once per question
+    if (userAnswers[quizId] === undefined || userAnswers[quizId] === null) {
+      setUserAnswers(prev => ({
+        ...prev,
+        [quizId]: choiceIndex,
+      }));
+    }
+  };
+
+
+   const handleNotionImport = async () => {
     setImportStatus('Importing from Notion...');
     setImportError('');
     try {
@@ -491,18 +601,29 @@ const Dashboard: React.FC = () => {
                 Test your knowledge with interactive quizzes
               </p>
               <button
-                disabled
+                onClick={handleTakeQuiz}
                 style={{
-                  backgroundColor: '#6c757d',
+                  backgroundColor: '#f6ad55',
                   color: 'white',
                   border: 'none',
                   padding: '0.75rem 1.5rem',
-                  borderRadius: '4px',
-                  cursor: 'not-allowed',
-                  fontSize: '0.9rem'
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontSize: '0.9rem',
+                  fontWeight: '600',
+                  transition: 'all 0.2s ease',
+                  boxShadow: '0 2px 4px rgba(246, 173, 85, 0.2)'
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.backgroundColor = '#ed8936';
+                  e.currentTarget.style.transform = 'translateY(-1px)';
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.backgroundColor = '#f6ad55';
+                  e.currentTarget.style.transform = 'translateY(0)';
                 }}
               >
-                Coming Soon
+                Take Quiz
               </button>
             </div>
           </div>
@@ -618,6 +739,234 @@ const Dashboard: React.FC = () => {
           {importStatus || `Error: ${importError}`}
         </div>
       )}
+
+      {/* 🟢 Course Selection Modal (Matches the provided image) */}
+      {showCourseSelectionModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 1000,
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            padding: '2rem 3rem',
+            borderRadius: '16px',
+            boxShadow: '0 10px 25px rgba(0,0,0,0.3)',
+            width: '90%',
+            maxWidth: '600px',
+            maxHeight: '80%',
+            overflowY: 'auto'
+          }}>
+            <h2 style={{
+              fontSize: '2.5rem',
+              fontWeight: '400',
+              textAlign: 'center',
+              marginBottom: '2rem',
+              fontFamily: 'Georgia, serif' // Mimics the font in the image
+            }}>
+              Courses
+            </h2>
+            
+            {courses.length === 0 && !importStatus && !importError ? (
+                <p style={{ textAlign: 'center', color: '#718096' }}>No courses available yet. Generate one!</p>
+            ) : (
+                courses.map((course) => (
+                    <div
+                        key={course.id}
+                        style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            padding: '1rem 0',
+                            borderBottom: '1px solid #e2e8f0',
+                            // The container from your image
+                            backgroundColor: '#fff',
+                            margin: '10px 0',
+                            paddingLeft: '15px',
+                            boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+                        }}
+                    >
+                        <span style={{ fontSize: '1.2rem', color: '#2d3748' }}>
+                            {course.title || 'Sample Course Title'}
+                        </span>
+                        <button
+                            onClick={() => handleTakeCourse(course.id)}
+                            style={{
+                                backgroundColor: '#4299e1', // Blue color from the image
+                                color: 'white',
+                                border: 'none',
+                                padding: '0.75rem 1.25rem',
+                                borderRadius: '4px',
+                                cursor: 'pointer',
+                                fontSize: '0.9rem',
+                                fontWeight: '600',
+                                transition: 'background-color 0.2s ease',
+                            }}
+                            onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#3182ce'}
+                            onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#4299e1'}
+                        >
+                            Take Course
+                        </button>
+                    </div>
+                ))
+            )}
+            
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '2rem' }}>
+              <button
+                onClick={() => setShowCourseSelectionModal(false)}
+                style={{
+                  backgroundColor: '#e2e8f0',
+                  color: '#2d3748',
+                  border: 'none',
+                  padding: '0.75rem 1.25rem',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontSize: '0.9rem',
+                  fontWeight: '600',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* 🧠 Quiz Modal (Displays interactive Quizzes) */}
+      {showQuizModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.8)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 1000,
+          overflowY: 'auto', // Allows scrolling for many quizzes
+          padding: '20px'
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            padding: '2rem',
+            borderRadius: '16px',
+            boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
+            width: '90%',
+            maxWidth: '800px',
+            maxHeight: '90%',
+            overflowY: 'auto'
+          }}>
+            <h2 style={{
+              textAlign: 'center',
+              color: '#2d3748',
+              marginBottom: '2rem',
+              fontSize: '2rem'
+            }}>
+              Quiz for Course: {courses.find(c => c.id === selectedCourseId)?.title || 'Loading...'}
+            </h2>
+
+            {quizzes.length === 0 && !importStatus && !importError ? (
+                <p style={{ textAlign: 'center', color: '#718096' }}>No quizzes found for this course.</p>
+            ) : (
+                quizzes.map((quiz, quizIndex) => (
+                    <div key={quiz.id} style={{ marginBottom: '2rem', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '1.5rem', backgroundColor: '#fafafa' }}>
+                        <p style={{ fontWeight: '600', color: '#4a5568', fontSize: '1.1rem', marginBottom: '1rem' }}>
+                            {quizIndex + 1}. {quiz.question}
+                        </p>
+                        
+                        <div style={{ display: 'grid', gap: '0.75rem' }}>
+                            {quiz.choices.map((choice, choiceIndex) => {
+                                const isAnswered = userAnswers[quiz.id] !== null && userAnswers[quiz.id] !== undefined;
+                                const isUserSelection = userAnswers[quiz.id] === choiceIndex;
+                                
+                                // Conditional Styling based on state
+                                let buttonStyle: React.CSSProperties = {
+                                    backgroundColor: '#fff',
+                                    color: '#2d3748',
+                                    border: '1px solid #e2e8f0',
+                                    padding: '0.75rem 1rem',
+                                    borderRadius: '6px',
+                                    textAlign: 'left',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s ease',
+                                    whiteSpace: 'normal',
+                                    wordWrap: 'break-word',
+                                };
+                                
+                                if (isAnswered) {
+                                    if (choice.isCorrect) {
+                                        // Correct answer: always green when answered
+                                        buttonStyle.backgroundColor = '#d1fae5'; // Light green
+                                        buttonStyle.border = '1px solid #10b981';
+                                        buttonStyle.color = '#065f46';
+                                    } else if (isUserSelection && !choice.isCorrect) {
+                                        // Wrong selection: red
+                                        buttonStyle.backgroundColor = '#fee2e2'; // Light red
+                                        buttonStyle.border = '1px solid #ef4444';
+                                        buttonStyle.color = '#991b1b';
+                                    }
+                                } else {
+                                    // Not answered: standard hover effect
+                                    buttonStyle = {
+                                        ...buttonStyle,
+                                        cursor: 'pointer',
+                                    };
+                                }
+
+                                return (
+                                    <button
+                                        key={choiceIndex}
+                                        onClick={() => handleAnswerSelection(quiz.id, choiceIndex)}
+                                        disabled={isAnswered} // Disable after an answer is chosen
+                                        style={buttonStyle}
+                                        onMouseOver={(e) => {
+                                          if (!isAnswered) e.currentTarget.style.backgroundColor = '#f7fafc';
+                                        }}
+                                        onMouseOut={(e) => {
+                                          if (!isAnswered) e.currentTarget.style.backgroundColor = '#fff';
+                                        }}
+                                    >
+                                        {String.fromCharCode(65 + choiceIndex)}. {choice.text}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+                ))
+            )}
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '2rem' }}>
+              <button
+                onClick={() => setShowQuizModal(false)}
+                style={{
+                  backgroundColor: '#e53e3e',
+                  color: 'white',
+                  border: 'none',
+                  padding: '0.75rem 1.25rem',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontSize: '0.9rem',
+                  fontWeight: '600',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                Close Quiz
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };
