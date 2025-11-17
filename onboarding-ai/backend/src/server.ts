@@ -26,10 +26,26 @@ app.get('/api/courses', async (req, res) => {
 
     const coursesRef = adminDb.collection('courses');
     const snapshot = await coursesRef.get();
-    const courses = snapshot.docs.map(doc => ({
-      id: doc.id,
-      title: doc.data().title,
-    }));
+    
+    const coursesPromises = snapshot.docs.map(async doc => {
+      const courseData = doc.data();
+      const categoryIds = courseData.category_ids || []; // Assuming category_ids is the field name
+      
+      const categoryTitlesPromises = categoryIds.map(async (categoryId: string) => {
+        const categoryDoc = await adminDb.collection('categories').doc(categoryId).get();
+        return categoryDoc.exists ? categoryDoc.data()?.title : null;
+      });
+
+      const categoryTitles = (await Promise.all(categoryTitlesPromises)).filter(Boolean); // Filter out nulls
+
+      return {
+        id: doc.id,
+        title: courseData.title,
+        categories: categoryTitles, // Return actual category titles
+      };
+    });
+
+    const courses = await Promise.all(coursesPromises);
     res.json({ success: true, courses });
   } catch (error: any) {
     console.error('Error fetching courses:', error);

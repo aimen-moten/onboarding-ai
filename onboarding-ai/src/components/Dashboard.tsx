@@ -29,6 +29,7 @@ interface QuizQuestion {
 interface Course {
   id: string;
   title: string;
+  categories: string[]; // Add categories to the Course interface
 }
 // -----------------------------------
 
@@ -205,13 +206,14 @@ const Dashboard: React.FC = () => {
     setImportError('');
     try {
       // Endpoint to fetch courses from firestore (you must implement this in server.ts)
-      const response = await fetch('http://localhost:3001/api/courses'); 
+      const response = await fetch('http://localhost:3001/api/courses');
       const data = await response.json();
 
       if (!response.ok) {
         throw new Error(data.error || 'Failed to fetch courses.');
       }
 
+      // Assuming the backend now returns courses with categories
       setCourses(data.courses);
       setImportStatus('');
     } catch (err: any) {
@@ -780,16 +782,14 @@ const Dashboard: React.FC = () => {
             {courses.length === 0 && !importStatus && !importError ? (
                 <p style={{ textAlign: 'center', color: '#718096' }}>No courses available yet. Generate one!</p>
             ) : (
-                courses.map((course) => (
+                courses.map((course: Course) => (
                     <div
                         key={course.id}
                         style={{
                             display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                            padding: '1rem 0',
+                            flexDirection: 'column', // Stack content vertically
+                            padding: '1rem 0', // Adjust padding for the whole course item
                             borderBottom: '1px solid #e2e8f0',
-                            // The container from your image
                             backgroundColor: '#f7f7f7ff',
                             margin: '10px 0',
                             paddingLeft: '15px',
@@ -797,27 +797,56 @@ const Dashboard: React.FC = () => {
                             boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
                         }}
                     >
-                        <span style={{ fontSize: '1.2rem', color: '#2d3748' }}>
-                            {course.title || 'Sample Course Title'}
-                        </span>
-                        <button
-                            onClick={() => handleTakeCourse(course.id)}
-                            style={{
-                                backgroundColor: '#4299e1', // Blue color from the image
-                                color: 'white',
-                                border: 'none',
-                                padding: '0.75rem 1.25rem',
-                                borderRadius: '4px',
-                                cursor: 'pointer',
-                                fontSize: '0.9rem',
-                                fontWeight: '600',
-                                transition: 'background-color 0.2s ease',
-                            }}
-                            onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#3182ce'}
-                            onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#4299e1'}
-                        >
-                            Take Course
-                        </button>
+                        <div style={{ // Container for title and button
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            marginBottom: '0.5rem', // Space between title/button and categories
+                        }}>
+                            <span style={{ fontSize: '1.2rem', color: '#2d3748' }}>
+                                {course.title || 'Sample Course Title'}
+                            </span>
+                            <button
+                                onClick={() => handleTakeCourse(course.id)}
+                                style={{
+                                    backgroundColor: '#4299e1', // Blue color from the image
+                                    color: 'white',
+                                    border: 'none',
+                                    padding: '0.75rem 1.25rem',
+                                    borderRadius: '4px',
+                                    cursor: 'pointer',
+                                    fontSize: '0.9rem',
+                                    fontWeight: '600',
+                                    transition: 'background-color 0.2s ease',
+                                }}
+                                onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#3182ce'}
+                                onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#4299e1'}
+                            >
+                                Take Course
+                            </button>
+                        </div>
+                        {course.categories && course.categories.length > 0 && (
+                            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', paddingBottom: '10px' }}>
+                                {course.categories.map((category: string, index: number) => (
+                                    <span
+                                        key={index}
+                                        style={{
+                                            backgroundColor: '#6a5acd', // Purple color from the image
+                                            color: 'white',
+                                            padding: '0.3rem 0.7rem',
+                                            borderRadius: '15px',
+                                            fontSize: '0.8rem',
+                                            fontWeight: '500',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '0.3rem',
+                                        }}
+                                    >
+                                        ⭐ {category}
+                                    </span>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 ))
             )}
