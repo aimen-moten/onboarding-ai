@@ -429,7 +429,7 @@ const Dashboard: React.FC = () => {
           padding: '3rem',
           borderRadius: '16px',
           boxShadow: '0 10px 25px rgba(0,0,0,0.08)',
-          marginBottom: '2rem',
+          marginBottom: '0.01rem',
           border: '1px solid #e2e8f0'
         }}>
           <h2 style={{
@@ -633,6 +633,232 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
       </main>
+
+      {/* Employee Progress At A Glance Section */}
+      <div style={{
+        padding: '2rem',
+        paddingTop: '0rem',
+        maxWidth: '1200px',
+        margin: '0 auto',
+        marginTop: '0.1rem'
+      }}>
+        <div style={{
+          backgroundColor: 'white',
+          padding: '3rem',
+          borderRadius: '16px',
+          boxShadow: '0 10px 25px rgba(0,0,0,0.08)',
+          border: '1px solid #e2e8f0'
+        }}>
+          <h2 style={{
+            color: '#2d3748',
+            marginBottom: '1rem',
+            marginTop: '0rem',
+            fontSize: '1.75rem',
+            fontWeight: '700',
+          }}>
+            Employee Progress
+          </h2>
+          <p style={{
+            color: '#718096',
+            lineHeight: '1.6',
+            marginBottom: '2rem',
+            fontSize: '1.1rem'
+          }}>
+            View your team's learning progress and performance metrics at a glance.
+          </p>
+
+
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+            gap: '1.5rem',
+            justifyContent: 'center',
+            alignItems: 'start'
+          }}>
+            {/* Course Completion Rate */}
+            <div style={{
+              backgroundColor: '#d1fae5', // Light green
+              color: '#065f46',
+              padding: '1.5rem',
+              borderRadius: '12px',
+              boxShadow: '0 4px 8px rgba(0,0,0,0.05)',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+              minHeight: '150px'
+            }}>
+              <div style={{ fontSize: '0.9rem', fontWeight: '600', marginBottom: '0.5rem' }}>COURSE COMPLETION RATE →</div>
+              <div style={{ fontSize: '2.5rem', fontWeight: '700' }}>85% <span style={{ fontSize: '1.5rem', verticalAlign: 'super' }}>↑</span></div>
+            </div>
+
+            {/* Overall Accuracy */}
+            <div style={{
+              backgroundColor: '#bfdbfe', // Light blue
+              color: '#1e40af',
+              padding: '1.5rem',
+              borderRadius: '12px',
+              boxShadow: '0 4px 8px rgba(0,0,0,0.05)',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+              minHeight: '150px'
+            }}>
+              <div style={{ fontSize: '0.9rem', fontWeight: '600', marginBottom: '0.5rem' }}>OVERALL ACCURACY</div>
+              <div style={{ fontSize: '2.5rem', fontWeight: '700' }}>78%</div>
+            </div>
+
+            {/* Course Completion Status (Donut Chart Placeholder) */}
+            <div style={{
+              backgroundColor: '#fff',
+              padding: '1.5rem',
+              borderRadius: '12px',
+              boxShadow: '0 4px 8px rgba(0,0,0,0.05)',
+              textAlign: 'center',
+              minHeight: '150px',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              alignItems: 'center'
+            }}>
+              <div style={{ fontSize: '0.9rem', fontWeight: '600', color: '#4a5568', marginBottom: '1rem' }}>COURSE COMPLETION STATUS</div>
+              <div style={{
+                width: '100px',
+                height: '100px',
+                borderRadius: '50%',
+                backgroundColor: '#d1fae5', // Light green for the filled part
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                fontSize: '1.8rem',
+                fontWeight: '700',
+                color: '#065f46',
+                position: 'relative',
+                background: `conic-gradient(#10b981 85%, #e2e8f0 85%)` // 85% complete
+              }}>
+                85%
+                <div style={{
+                  position: 'absolute',
+                  top: '50%',
+                  left: '50%',
+                  transform: 'translate(-50%, -50%)',
+                  fontSize: '0.8rem',
+                  fontWeight: '500',
+                  color: '#4a5568',
+                  marginTop: '30px'
+                }}>COMPLETE</div>
+              </div>
+            </div>
+
+            {/* Quiz Difficulty Over Time (Line Graph Placeholder) */}
+            <div style={{
+              backgroundColor: '#fff',
+              padding: '1.5rem',
+              borderRadius: '12px',
+              boxShadow: '0 4px 8px rgba(0,0,0,0.05)',
+              minHeight: '150px',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              alignItems: 'center'
+            }}>
+              <div style={{ fontSize: '0.9rem', fontWeight: '600', color: '#4a5568', marginBottom: '1rem' }}>QUIZ DIFFICULTY OVER TIME</div>
+              {/* Simple SVG for a line graph placeholder */}
+              <svg width="200" height="100" viewBox="0 0 200 100" style={{ overflow: 'visible' }}>
+                <polyline
+                  fill="none"
+                  stroke="#4299e1"
+                  strokeWidth="2"
+                  points="0,80 50,60 100,40 150,20 200,10"
+                />
+                <text x="0" y="95" fontSize="10" fill="#718096">Week 1</text>
+                <text x="40" y="75" fontSize="10" fill="#718096">Week 2</text>
+                <text x="90" y="55" fontSize="10" fill="#718096">Week 3</text>
+                <text x="140" y="35" fontSize="10" fill="#718096">Week 4</text>
+                <text x="190" y="25" fontSize="10" fill="#718096">80%</text>
+              </svg>
+            </div>
+
+            {/* Total Quizzes Generated */}
+            <div style={{
+              backgroundColor: '#a78bfa', // Purple
+              color: 'white',
+              padding: '1.5rem',
+              borderRadius: '12px',
+              boxShadow: '0 4px 8px rgba(0,0,0,0.05)',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+              minHeight: '150px'
+            }}>
+              <div style={{ fontSize: '0.9rem', fontWeight: '600', marginBottom: '0.5rem' }}>TOTAL QUIZZES GENERATED</div>
+              <div style={{ fontSize: '2.5rem', fontWeight: '700' }}>42</div>
+            </div>
+
+            {/* Training Time Saved */}
+            <div style={{
+              backgroundColor: '#fbd38d', // Orange
+              color: '#975a16',
+              padding: '1.5rem',
+              borderRadius: '12px',
+              boxShadow: '0 4px 8px rgba(0,0,0,0.05)',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+              minHeight: '150px'
+            }}>
+              <div style={{ fontSize: '0.9rem', fontWeight: '600', marginBottom: '0.5rem' }}>TRAINING TIME SAVED</div>
+              <div style={{ fontSize: '2.5rem', fontWeight: '700' }}>12 <span style={{ fontSize: '1.2rem', verticalAlign: 'super' }}>hours/week</span></div>
+            </div>
+
+            {/* Category Accuracy Breakdown (Bar Chart Placeholder) */}
+            <div style={{
+              backgroundColor: '#fff',
+              padding: '1.5rem',
+              borderRadius: '12px',
+              boxShadow: '0 4px 8px rgba(0,0,0,0.05)',
+              gridColumn: 'span 2 / auto', // Span two columns for wider display
+              minHeight: '150px',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              alignItems: 'center'
+            }}>
+              <div style={{ fontSize: '0.9rem', fontWeight: '600', color: '#4a5568', marginBottom: '1rem' }}>CATEGORY ACCURACY BREAKDOWN</div>
+              {/* Simple bar chart placeholder */}
+              <div style={{ width: '100%', maxWidth: '400px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', marginBottom: '0.5rem' }}>
+                  <span style={{ fontSize: '0.8rem', color: '#4a5568', width: '100px' }}>Policy & Compliance</span>
+                  <div style={{ flexGrow: 1, height: '15px', backgroundColor: '#e2e8f0', borderRadius: '4px' }}>
+                    <div style={{ width: '90%', height: '100%', backgroundColor: '#68d391', borderRadius: '4px' }}></div>
+                  </div>
+                  <span style={{ fontSize: '0.8rem', color: '#4a5568', marginLeft: '0.5rem' }}>90%</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', marginBottom: '0.5rem' }}>
+                  <span style={{ fontSize: '0.8rem', color: '#4a5568', width: '100px' }}>System Access & IT</span>
+                  <div style={{ flexGrow: 1, height: '15px', backgroundColor: '#e2e8f0', borderRadius: '4px' }}>
+                    <div style={{ width: '75%', height: '100%', backgroundColor: '#63b3ed', borderRadius: '4px' }}></div>
+                  </div>
+                  <span style={{ fontSize: '0.8rem', color: '#4a5568', marginLeft: '0.5rem' }}>75%</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', marginBottom: '0.5rem' }}>
+                  <span style={{ fontSize: '0.8rem', color: '#4a5568', width: '100px' }}>Company History</span>
+                  <div style={{ flexGrow: 1, height: '15px', backgroundColor: '#e2e8f0', borderRadius: '4px' }}>
+                    <div style={{ width: '88%', height: '100%', backgroundColor: '#f6ad55', borderRadius: '4px' }}></div>
+                  </div>
+                  <span style={{ fontSize: '0.8rem', color: '#4a5568', marginLeft: '0.5rem' }}>88%</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center' }}>
+                  <span style={{ fontSize: '0.8rem', color: '#4a5568', width: '100px' }}>HR Procedures</span>
+                  <div style={{ flexGrow: 1, height: '15px', backgroundColor: '#e2e8f0', borderRadius: '4px' }}>
+                    <div style={{ width: '63%', height: '100%', backgroundColor: '#fc8181', borderRadius: '4px' }}></div>
+                  </div>
+                  <span style={{ fontSize: '0.8rem', color: '#4a5568', marginLeft: '0.5rem' }}>63%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Notion Import Modal */}
       {showNotionModal && (
